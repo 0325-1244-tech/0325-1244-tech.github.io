@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Jun Dave Ofrin</title>
+<meta name="description" content="Jun Dave Ofrin is a video editor for short-form, YouTube and brand content, working in DaVinci Resolve Studio. Open to remote work.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Jun Dave Ofrin, Video Editor">
+<meta property="og:description" content="Short-form, YouTube and brand content, edited in DaVinci Resolve Studio. Open to remote work.">
+<meta property="og:image" content="https://0325-1244-tech.github.io/og-image.png">
+<meta property="og:url" content="https://0325-1244-tech.github.io/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23f28b3c'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%230a1619'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;600&display=swap">
+<style>
+/* Layout: the page is an edit. A sticky timeline maps its sections as clips, with a playhead and timecode following the scroll. */
+:root {
+  --shadow: #0a1619;
+  --panel: #11242a;
+  --line: #2a444b;
+  --paper: #f3e8d9;
+  --muted: #a9b8b4;
+  --tungsten: #f28b3c;
+  --teal: #4fb3ad;
+  --display: "Big Shoulders Display", Impact, "Arial Narrow", sans-serif;
+  --body: "Hanken Grotesk", "Segoe UI", Arial, sans-serif;
+  --mono: "DM Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 88px; }
+body {
+  margin: 0;
+  background: var(--shadow);
+  color: var(--paper);
+  font: 400 1.0625rem/1.6 var(--body);
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--shadow);
+}
+a { color: inherit; }
+a:focus-visible, button:focus-visible, video:focus-visible { outline: 2px solid var(--tungsten); outline-offset: 3px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 900; text-transform: uppercase; line-height: .95; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.wrap {
+  max-width: 1160px; margin-inline: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.label { font: 500 .75rem/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--teal); }
+
+/* Timeline header */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--shadow); border-bottom: 1px solid var(--line); }
+.bar-top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-block: 10px 6px; }
+.bar-name { font: 900 1.25rem/1 var(--display); letter-spacing: .03em; text-transform: uppercase; text-decoration: none; }
+.tc { font: 500 .9375rem/1 var(--mono); color: var(--tungsten); font-variant-numeric: tabular-nums; }
+.track { position: relative; display: flex; gap: 2px; height: 24px; margin-bottom: 10px; }
+.clip {
+  flex: 1 1 0; min-width: 0; display: flex; align-items: center; padding-inline: 6px;
+  background: var(--panel); border-top: 2px solid var(--clip, var(--teal));
+  font: 400 .6875rem/1 var(--mono); color: var(--muted); text-decoration: none; overflow: hidden; white-space: nowrap;
+}
+.clip:nth-of-type(odd) { --clip: var(--tungsten); }
+.clip:hover { color: var(--paper); background: var(--line); }
+.playhead { position: absolute; top: -4px; bottom: -4px; left: 0; width: 2px; background: var(--tungsten); pointer-events: none; }
+
+/* Hero: text on the left, 3D stage on the right */
+.hero { padding-block: clamp(28px, 5vw, 56px) clamp(32px, 5vw, 56px); display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: clamp(16px, 3vw, 40px); align-items: center; }
+.hero-text { position: relative; z-index: 1; min-width: 0; }
+.hero h1 { font-size: clamp(4.25rem, 11.5vw, 9.5rem); line-height: .84; }
+.hero h1 span { display: block; color: var(--tungsten); }
+.hero-lead { font-size: 1.25rem; line-height: 1.4; margin-top: 20px; max-width: 34rem; }
+.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; margin: 20px 0; font: 400 .875rem/1.5 var(--mono); }
+.facts dt { color: var(--teal); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.hero-links { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn { display: inline-block; padding: 10px 16px; font: 500 .8125rem/1.3 var(--mono); text-transform: uppercase; letter-spacing: .05em; text-decoration: none; border: 1px solid var(--paper); background: transparent; color: var(--paper); cursor: pointer; }
+.btn:hover { background: var(--paper); color: var(--shadow); }
+.btn-hot { background: var(--tungsten); border-color: var(--tungsten); color: var(--shadow); }
+.btn-hot:hover { background: var(--paper); border-color: var(--paper); }
+.stage { position: relative; min-width: 0; aspect-ratio: 1 / 1; max-height: 560px; width: 100%; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.stage svg { position: absolute; inset: 8%; width: 84%; height: 84%; transition: opacity .4s; }
+.stage.live svg { opacity: 0; }
+
+/* The intro video holds this spot until the showreel exists */
+.intro-band { border-top: 1px solid var(--line); padding-block: clamp(32px, 5vw, 56px); }
+.intro { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: clamp(16px, 3vw, 40px); align-items: end; }
+.intro video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; border: 1px solid var(--line); }
+.intro-note { display: grid; gap: 8px; font-size: .9375rem; color: var(--muted); }
+.reel-link { display: block; width: 100%; padding: 0; aspect-ratio: 16 / 9; background-size: cover; background-position: center; border: 1px solid var(--line); cursor: pointer; }
+
+/* Sections */
+section { padding-block: clamp(48px, 7vw, 88px); border-top: 1px solid var(--line); }
+.head { display: grid; gap: 8px; margin-bottom: clamp(24px, 4vw, 48px); }
+.head h2 { font-size: clamp(2.75rem, 7vw, 5rem); }
+.head p { max-width: 40rem; color: var(--muted); }
+
+/* Why hire me */
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(20px, 3vw, 40px); }
+.why article { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.why h3 { font-size: clamp(1.75rem, 3vw, 2.25rem); color: var(--tungsten); }
+.why p { color: var(--muted); }
+
+/* Projects */
+.projects { display: grid; gap: clamp(40px, 6vw, 72px); }
+.project { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(20px, 4vw, 48px); align-items: center; }
+.poster {
+  position: relative; display: grid; place-items: center; aspect-ratio: 16 / 9; width: 100%; max-width: 100%; overflow: hidden;
+  text-align: center; text-decoration: none; padding: 16px; border: 0; color: var(--paper); font: inherit;
+  background-size: cover; background-position: center;
+  transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .18s ease-out;
+}
+button.poster { cursor: pointer; }
+.poster-tall { aspect-ratio: auto; height: clamp(320px, 42vw, 460px); grid-template-rows: minmax(0, 1fr); background: linear-gradient(120deg, #143239, #0d1f24); }
+.poster-tall .phone { height: 100%; aspect-ratio: 9 / 16; max-width: 100%; display: grid; align-content: center; gap: 6px; padding: 12px; border: 1px solid var(--paper); background: var(--shadow); }
+.poster-warm { background: radial-gradient(circle at 72% 28%, #d98a45 0, #6f3d20 42%, #1a1412 100%); }
+.poster-street { background: linear-gradient(160deg, #173a40 0, #0d1f24 55%, #7d3f1a 130%); }
+.poster-big { font: 900 clamp(2.75rem, 7vw, 5.5rem)/.92 var(--display); text-transform: uppercase; }
+.poster-sub { font: 500 .8125rem/1.4 var(--mono); }
+.cap { font: 900 1.75rem/1 var(--display); text-transform: uppercase; }
+.cap b { color: var(--tungsten); font-weight: 900; }
+.tag { position: absolute; left: 0; top: 0; padding: 6px 10px; background: var(--shadow); color: var(--paper); font: 500 .6875rem/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.tag-play { background: var(--tungsten); color: var(--shadow); }
+.project-info { display: grid; gap: 12px; min-width: 0; }
+.project-info h3 { font-size: clamp(2rem, 4vw, 3rem); }
+.meta { font: 400 .8125rem/1.5 var(--mono); color: var(--muted); }
+.meta b { color: var(--tungsten); font-weight: 500; }
+.case { display: grid; gap: 10px; margin: 0; }
+.case dt { font: 500 .6875rem/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--teal); }
+.case dd { margin: 0; font-size: 1rem; line-height: 1.5; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.chips li { padding: 3px 8px; border: 1px solid var(--line); font: 400 .75rem/1.4 var(--mono); }
+
+.project-more { font: 400 .8125rem/1.5 var(--mono); }
+.next { display: grid; gap: 12px; margin-top: clamp(40px, 6vw, 72px); padding-top: 24px; border-top: 1px solid var(--line); }
+.next h3 { font-size: clamp(1.75rem, 3vw, 2.25rem); }
+.next ul { display: grid; gap: 6px; list-style: none; margin: 0; padding: 0; font: 400 .875rem/1.5 var(--mono); color: var(--muted); }
+.next b { display: inline-block; min-width: 13rem; color: var(--paper); font-weight: 500; }
+
+/* Skills, shown as timeline tracks */
+.tracks { display: grid; gap: 2px; }
+.t-row { display: grid; grid-template-columns: 48px minmax(0, 170px) minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px 16px; background: var(--panel); }
+.t-id { font: 500 .875rem/1 var(--mono); color: var(--tungsten); }
+.t-audio .t-id { color: var(--teal); }
+.t-name { font-weight: 600; }
+.t-list { color: var(--muted); }
+
+/* How I work: clips laid end to end, in order */
+.steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; list-style: none; margin: 0; padding: 0; counter-reset: step; }
+.steps li { display: grid; gap: 8px; align-content: start; padding: 16px; background: var(--panel); border-top: 2px solid var(--teal); counter-increment: step; min-width: 0; }
+.steps li:nth-child(odd) { border-top-color: var(--tungsten); }
+.steps li::before { content: "0" counter(step); font: 500 .75rem/1 var(--mono); color: var(--muted); }
+.steps strong { font: 900 1.5rem/1 var(--display); text-transform: uppercase; }
+.steps span { font-size: .9375rem; line-height: 1.45; color: var(--muted); }
+
+/* About */
+.about { display: grid; grid-template-columns: 200px minmax(0, 40rem); gap: 32px; align-items: start; }
+.about img { width: 200px; height: 200px; object-fit: cover; display: block; border: 1px solid var(--line); }
+.about-copy { display: grid; gap: 14px; }
+
+/* Contact */
+.contact h2 { font-size: clamp(3.25rem, 11vw, 8.5rem); line-height: .86; }
+.contact-rows { display: grid; gap: 10px; margin-top: 28px; }
+.contact-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.addr { font: 500 1rem/1.4 var(--mono); overflow-wrap: anywhere; user-select: all; }
+footer { padding-block: 20px calc(20px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); color: var(--muted); font: 400 .75rem/1.5 var(--mono); }
+
+/* Video player */
+dialog.player { width: min(1100px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--line); background: var(--shadow); color: var(--paper); }
+dialog.player.is-vertical { width: min(420px, calc(100vw - 32px)); }
+dialog.player::backdrop { background: rgba(4, 10, 12, .88); }
+.player-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; }
+.player-title { font: 900 1.375rem/1 var(--display); text-transform: uppercase; min-width: 0; }
+.player-frame { aspect-ratio: 16 / 9; background: #000; }
+.is-vertical .player-frame { aspect-ratio: 9 / 16; max-height: calc(100dvh - 130px); margin-inline: auto; }
+.player-frame iframe, .player-frame video { display: block; width: 100%; height: 100%; border: 0; }
+.player-out { padding: 10px 12px; font: 400 .75rem/1.4 var(--mono); color: var(--muted); }
+
+@media (max-width: 760px) {
+  .hero, .project, .intro, .why { grid-template-columns: minmax(0, 1fr); }
+  .stage { order: -1; max-height: 300px; aspect-ratio: 4 / 3; margin-bottom: -12px; }
+  .t-row { grid-template-columns: 40px minmax(0, 1fr); gap: 4px 12px; }
+  .t-list { grid-column: 2; }
+  .about { grid-template-columns: minmax(0, 1fr); }
+  .steps { grid-template-columns: minmax(0, 1fr); }
+  .clip { padding-inline: 3px; font-size: .625rem; flex-grow: 1 !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .poster, .stage svg { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <div class="bar-top">
+      <a class="bar-name" href="#top">Jun Dave Ofrin</a>
+      <span class="tc" id="tc" aria-hidden="true">01:00:00:00</span>
+    </div>
+    <nav class="track" id="track" aria-label="Page sections">
+      <a class="clip" href="#top">Top</a>
+      <a class="clip" href="#why">Why</a>
+      <a class="clip" href="#work">Work</a>
+      <a class="clip" href="#skills">Skills</a>
+      <a class="clip" href="#how">How</a>
+      <a class="clip" href="#about">About</a>
+      <a class="clip" href="#contact">Contact</a>
+      <span class="playhead" id="playhead"></span>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div id="top">
+    <div class="wrap hero">
+      <div class="hero-text">
+        <h1>Jun Dave <span>Ofrin</span></h1>
+        <p class="hero-lead">Video editor for short-form, YouTube and brand content. I cut for mood, pace and the moment people decide to keep watching.</p>
+        <dl class="facts">
+          <dt>Role</dt><dd>Video Editor</dd>
+          <dt>Software</dt><dd>DaVinci Resolve Studio</dd>
+          <dt>Based in</dt><dd>San Pablo City, Philippines</dd>
+          <dt>Available</dt><dd>Open to remote work</dd>
+          <dt>Email</dt><dd>0325-1244@lspu.edu.ph</dd>
+        </dl>
+        <div class="hero-links">
+          <a class="btn btn-hot" href="#contact">Hire me</a>
+          <a class="btn" href="#work">See the work</a>
+          <a class="btn" id="resume" href="Jun-Dave-Ofrin-Resume.pdf" download hidden>Download resume</a>
+        </div>
+      </div>
+      <div class="stage" id="stage" aria-hidden="true">
+        <svg viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="96" fill="#f28b3c"/>
+          <circle cx="100" cy="100" r="60" fill="#142a30"/>
+          <g fill="#0a1619">
+            <circle cx="100" cy="46" r="22"/><circle cx="151" cy="83" r="22"/><circle cx="132" cy="144" r="22"/>
+            <circle cx="68" cy="144" r="22"/><circle cx="49" cy="83" r="22"/>
+          </g>
+          <circle cx="100" cy="100" r="16" fill="#f3e8d9"/>
+          <circle cx="100" cy="100" r="6" fill="#0a1619"/>
+        </svg>
+        <canvas id="scene"></canvas>
+      </div>
+    </div>
+    <div class="intro-band">
+      <div class="wrap intro" id="reel"></div>
+    </div>
+  </div>
+
+  <section id="why">
+    <div class="wrap">
+      <div class="head">
+        <p class="label">Why hire me</p>
+        <h2>One editor, the whole edit</h2>
+      </div>
+      <div class="why">
+        <article>
+          <h3>Full post-production</h3>
+          <p>I handle cutting and pacing, color grading, captions, motion tracking, VFX, compositing and sound design in DaVinci Resolve.</p>
+        </article>
+        <article>
+          <h3>Story first</h3>
+          <p>Academic short films and travel video taught me scene sequencing, narrative flow, and how to keep mood consistent from shot to shot.</p>
+        </article>
+        <article>
+          <h3>A technical mind</h3>
+          <p>As a BSIT student with basic C#, Excel and UI/UX wireframing skills, I solve problems methodically and keep learning new tools.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="work">
+    <div class="wrap">
+      <div class="head">
+        <p class="label">Video track</p>
+        <h2>Selected work</h2>
+        <p>Four films I edited in DaVinci Resolve. Click any film to watch the full cut.</p>
+      </div>
+      <div class="projects" id="projects"></div>
+      <div class="next">
+        <h3>Now in production</h3>
+        <ul>
+          <li><b>Three Cuts</b> Concept project · 45-second vertical reel</li>
+          <li><b>Pitong Lawa Coffee</b> Concept project · 30-second brand ad</li>
+          <li><b>The ₱500 Food Trip</b> Concept project · 4-minute YouTube video</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="skills">
+    <div class="wrap">
+      <div class="head">
+        <p class="label">Full timeline</p>
+        <h2>What I do</h2>
+      </div>
+      <div class="tracks">
+        <div class="t-row"><span class="t-id">V3</span><span class="t-name">Visual effects</span><span class="t-list">VFX, motion tracking, background removal, compositing</span></div>
+        <div class="t-row"><span class="t-id">V2</span><span class="t-name">Color</span><span class="t-list">Color grading, mood and visual continuity</span></div>
+        <div class="t-row"><span class="t-id">V1</span><span class="t-name">Editing</span><span class="t-list">Cutting and pacing, transitions, captions, frame-rate management</span></div>
+        <div class="t-row t-audio"><span class="t-id">A1</span><span class="t-name">Sound</span><span class="t-list">Sound effects, music selection, audio transitions, audiovisual sync</span></div>
+        <div class="t-row t-audio"><span class="t-id">A2</span><span class="t-name">Story</span><span class="t-list">Scene sequencing and narrative flow</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="head">
+        <p class="label">Working together</p>
+        <h2>How I work</h2>
+      </div>
+      <ol class="steps">
+        <li><strong>Brief</strong><span>I confirm the goal, audience, length and formats you need.</span></li>
+        <li><strong>Rough cut</strong><span>I build the story and pacing first, before any polish.</span></li>
+        <li><strong>Feedback</strong><span>You send notes, and I revise the structure while changes are easy.</span></li>
+        <li><strong>Color and sound</strong><span>I grade the footage, add captions and graphics, and mix the audio.</span></li>
+        <li><strong>Delivery</strong><span>You get final exports for each platform you plan to use.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="wrap">
+      <div class="head">
+        <p class="label">Behind the edit</p>
+        <h2>About</h2>
+      </div>
+      <div class="about">
+        <img src="jun.jpg" alt="Portrait of Jun Dave Ofrin" width="200" height="200">
+        <div class="about-copy">
+          <p>I'm an Information Technology student at Laguna State Polytechnic University, San Pablo City Campus, and a video editor working in DaVinci Resolve.</p>
+          <p>I started editing through academic short films and travel video, where I learned how much of a story happens in the cut. My technical background helps me solve problems quickly and stay organized on a project, and I keep learning new techniques with every edit.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="contact">
+    <div class="wrap">
+      <p class="label">Final cut</p>
+      <h2>Have footage? Let's talk.</h2>
+      <div class="contact-rows">
+        <div class="contact-row">
+          <span class="addr" id="email">0325-1244@lspu.edu.ph</span>
+          <button class="btn" id="copy" type="button">Copy email</button>
+        </div>
+        <div class="contact-row">
+          <a class="btn btn-hot" href="https://www.linkedin.com/in/jun-dave-ofrin-0563aa43a" target="_blank" rel="noopener">Message me on LinkedIn</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">Jun Dave Ofrin · Video Editor · 2026</div></footer>
+
+<dialog class="player" id="player" aria-labelledby="player-title">
+  <div class="player-bar">
+    <span class="player-title" id="player-title"></span>
+    <button class="btn" id="player-close" type="button">Close</button>
+  </div>
+  <div class="player-frame" id="player-frame"></div>
+  <p class="player-out" id="player-out" hidden></p>
+</dialog>
+
+<script>
+/* `video` can be a Google Drive file link, a YouTube link, or a file such as "videos/film.mp4".
+   `image` is the thumbnail. Leave `video` empty to show an "In the edit" label. */
+const SHOWREEL = "showreel.mp4";
+
+const PROJECTS = [
+  {
+    title: "Seven Lakes",
+    type: "Travel vlog · 5:54",
+    story: "A cinematic tour of the scenery around San Pablo's Seven Lakes.",
+    work: "I used Resolve nodes for motion tracking, so on-screen text stays attached to a moving scene, and made background removal a signature transition.",
+    tools: ["DaVinci Resolve", "Motion tracking", "Background removal", "Pacing"],
+    poster: "street",
+    video: "https://drive.google.com/file/d/1kdXwRIAWfinPX6p-_GKvT3_1_uKNOZsv/view",
+    image: "thumbs/seven-lakes.jpg"
+  },
+  {
+    title: "First Move",
+    type: "Short film · Drama · 6:22",
+    story: "A story about schizophrenia and depression, and the importance of support.",
+    work: "I used precise cutting, color grading, and carefully chosen music and sound effects, sequencing the scenes into a clear emotional narrative.",
+    tools: ["DaVinci Resolve", "Color grading", "Sound design", "Sequencing"],
+    note: "Deals with mental illness.",
+    poster: "street",
+    video: "https://drive.google.com/file/d/1CU0qMXklbQ3hYyHbpLWNt8B3qpN8MmFs/view",
+    image: "thumbs/first-move.jpg"
+  },
+  {
+    title: "Breaking the Law",
+    type: "Short film · Action, drama · 10:36",
+    story: "A police officer seeks revenge after his wife's death.",
+    work: "I applied audio transitions, custom gunshot VFX and manually created captions, building on techniques from my earlier projects.",
+    tools: ["DaVinci Resolve", "VFX", "Audio transitions", "Captions"],
+    note: "Contains violence.",
+    poster: "street",
+    video: "https://drive.google.com/file/d/1Y1MzoCQQ2lpNIaYWsAfBlbDkgn3dpzwO/view",
+    image: "thumbs/breaking-the-law.jpg"
+  },
+  {
+    title: "Imahe",
+    type: "Short film · Drama · 9:35",
+    story: "A look at the effects and consequences of drug use.",
+    work: "I practiced transitions, music selection, sound effects and VFX to strengthen the film's impact, and tuned frame-rate settings to improve its pacing.",
+    tools: ["DaVinci Resolve", "VFX", "Frame-rate management", "Sound effects"],
+    note: "Depicts drug use.",
+    poster: "street",
+    video: "https://drive.google.com/file/d/1p27JI-Hz3wKmImcZJvL6rOuK6oEC_D0P/view",
+    image: "thumbs/imahe.jpg",
+    trailer: "https://drive.google.com/file/d/1e99_YR0eJ0SkQHkYc9PC-QsqEuP4r2Bf/view"
+  }
+];
+
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function youtubeId(url) {
+  if (url.indexOf("drive.google.com") !== -1) return "";
+  const match = url.match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([\w-]{11})/);
+  return match ? match[1] : "";
+}
+
+function driveId(url) {
+  const match = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
+  return match ? match[1] : "";
+}
+
+function thumb(p) {
+  if (p.image) return p.image;
+  const id = youtubeId(p.video);
+  return id ? "https://img.youtube.com/vi/" + id + "/hqdefault.jpg" : "";
+}
+
+function posterArt(p) {
+  if (p.poster === "tall") {
+    return '<div class="phone"><span class="cap">Cut the <b>silence.</b></span><span class="poster-sub">Three Cuts</span></div>';
+  }
+  if (p.poster === "warm") {
+    return '<div><div class="poster-big">Mabagal ang umaga dito.</div><div class="poster-sub">Pitong Lawa Coffee</div></div>';
+  }
+  return '<div><div class="poster-big">₱500</div><div class="poster-sub">One day. San Pablo City.</div></div>';
+}
+
+function escapeAttr(value) {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+}
+
+function renderProjects() {
+  const host = document.getElementById("projects");
+  host.innerHTML = PROJECTS.map(function (p, i) {
+    const chips = p.tools.map(function (t) { return "<li>" + t + "</li>"; }).join("");
+    const image = p.video ? thumb(p) : "";
+    const style = image ? ' style="background-image:url(' + escapeAttr(image) + ')"' : "";
+    const poster = p.video
+      ? '<button class="poster poster-' + p.poster + ' tilt" type="button" data-play="' + i + '" aria-label="Watch ' + escapeAttr(p.title) + '"' + style + '><span class="tag tag-play">Watch film</span>' + (image ? "" : posterArt(p)) + "</button>"
+      : '<div class="poster poster-' + p.poster + ' tilt"><span class="tag">In the edit</span>' + posterArt(p) + "</div>";
+    const note = p.note ? '<p class="meta">' + p.note + "</p>" : "";
+    const more = p.trailer ? '<p class="project-more"><a href="' + escapeAttr(p.trailer) + '" target="_blank" rel="noopener">Watch the trailer</a></p>' : "";
+    return '<article class="project">' + poster + '<div class="project-info">' +
+      '<p class="meta"><b>Editor</b> · ' + p.type + "</p><h3>" + p.title + "</h3>" +
+      '<dl class="case"><div><dt>The film</dt><dd>' + p.story + "</dd></div><div><dt>My edit</dt><dd>" + p.work + "</dd></div></dl>" +
+      '<ul class="chips" aria-label="Tools">' + chips + "</ul>" + note + more + "</div></article>";
+  }).join("");
+  bindTilt();
+}
+
+function renderReel() {
+  const host = document.getElementById("reel");
+  host.innerHTML = '<video src="' + escapeAttr(SHOWREEL) + '" ' + (reducedMotion ? "" : "autoplay ") + 'muted loop playsinline controls preload="metadata" aria-label="30-second highlight reel of four films edited by Jun Dave Ofrin"></video>' +
+    '<div class="intro-note"><p class="label">30-second highlights</p><p>Moments from my four films. The footage and the original edits are mine. This short recut and its music were made with Claude (AI). Turn on the sound to hear it, then watch the full films below.</p></div>';
+}
+
+/* Video player: nothing loads until someone clicks a project */
+const player = document.getElementById("player");
+const playerFrame = document.getElementById("player-frame");
+const playerOut = document.getElementById("player-out");
+
+function openPlayer(p) {
+  document.getElementById("player-title").textContent = p.title;
+  player.classList.toggle("is-vertical", !!p.vertical);
+  playerFrame.replaceChildren();
+  playerOut.hidden = true;
+  const id = youtubeId(p.video), drive = driveId(p.video);
+  if (id || drive) {
+    const frame = document.createElement("iframe");
+    frame.src = id
+      ? "https://www.youtube-nocookie.com/embed/" + id + "?autoplay=1&rel=0"
+      : "https://drive.google.com/file/d/" + drive + "/preview";
+    frame.title = p.title;
+    frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+    frame.allowFullscreen = true;
+    playerFrame.appendChild(frame);
+    const outUrl = id ? "https://www.youtube.com/watch?v=" + id : p.video;
+    playerOut.innerHTML = 'Not playing? <a href="' + escapeAttr(outUrl) + '" target="_blank" rel="noopener">Watch on ' + (id ? "YouTube" : "Google Drive") + "</a>";
+    playerOut.hidden = false;
+  } else {
+    const video = document.createElement("video");
+    video.src = p.video;
+    video.controls = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    playerFrame.appendChild(video);
+  }
+  player.showModal();
+}
+
+document.getElementById("player-close").addEventListener("click", function () { player.close(); });
+player.addEventListener("click", function (e) { if (e.target === player) player.close(); });
+player.addEventListener("close", function () { playerFrame.replaceChildren(); });
+document.getElementById("projects").addEventListener("click", function (e) {
+  const button = e.target.closest("[data-play]");
+  if (button) openPlayer(PROJECTS[Number(button.dataset.play)]);
+});
+
+/* Small 3D tilt on project posters, for mouse users only */
+function bindTilt() {
+  if (reducedMotion || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+  document.querySelectorAll(".tilt").forEach(function (el) {
+    el.addEventListener("pointermove", function (e) {
+      const box = el.getBoundingClientRect();
+      el.style.setProperty("--ry", (((e.clientX - box.left) / box.width - .5) * 8).toFixed(2) + "deg");
+      el.style.setProperty("--rx", ((.5 - (e.clientY - box.top) / box.height) * 8).toFixed(2) + "deg");
+    });
+    el.addEventListener("pointerleave", function () {
+      el.style.setProperty("--rx", "0deg");
+      el.style.setProperty("--ry", "0deg");
+    });
+  });
+}
+
+renderReel();
+renderProjects();
+
+/* Change this to true after saving the resume as Jun-Dave-Ofrin-Resume.pdf in the site folder */
+const RESUME_READY = false;
+document.getElementById("resume").hidden = !RESUME_READY;
+
+/* Timeline: clip widths match section lengths, and the playhead follows the scroll. */
+const FPS = 24;
+const RUNTIME_SECONDS = 120;
+const track = document.getElementById("track");
+const playhead = document.getElementById("playhead");
+const tc = document.getElementById("tc");
+const clips = Array.from(track.querySelectorAll(".clip"));
+
+function sizeClips() {
+  const page = document.documentElement.scrollHeight;
+  clips.forEach(function (clip) {
+    const box = document.getElementById(clip.getAttribute("href").slice(1));
+    clip.style.flexGrow = Math.max(box.offsetHeight / page, 0.1) * 100;
+  });
+}
+
+function pad(n) { return String(n).padStart(2, "0"); }
+
+function update() {
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = max > 0 ? Math.min(window.scrollY / max, 1) : 0;
+  playhead.style.left = "calc(" + (progress * 100) + "% - " + (progress * 2) + "px)";
+  const frames = Math.round(progress * RUNTIME_SECONDS * FPS);
+  const seconds = Math.floor(frames / FPS);
+  tc.textContent = "01:" + pad(Math.floor(seconds / 60)) + ":" + pad(seconds % 60) + ":" + pad(frames % FPS);
+}
+
+window.addEventListener("scroll", update, { passive: true });
+window.addEventListener("resize", function () { sizeClips(); update(); });
+window.addEventListener("load", function () { sizeClips(); update(); });
+sizeClips();
+update();
+
+document.getElementById("copy").addEventListener("click", function () {
+  const button = this;
+  const address = document.getElementById("email").textContent;
+  function done(text) { button.textContent = text; }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(address).then(function () { done("Copied"); }, function () { done("Select the address to copy"); });
+  } else {
+    done("Select the address to copy");
+  }
+});
+
+/* 3D film reel. The still drawing stays visible if any of this is skipped or fails. */
+function canRun3D() {
+  if (reducedMotion) return false;
+  const conn = navigator.connection;
+  if (conn && conn.saveData) return false;
+  if (navigator.deviceMemory && navigator.deviceMemory <= 2) return false;
+  if (window.innerWidth < 760 && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) return false;
+  try {
+    const test = document.createElement("canvas");
+    return !!(test.getContext("webgl2") || test.getContext("webgl"));
+  } catch (e) {
+    return false;
+  }
+}
+
+function filmTexture() {
+  const c = document.createElement("canvas");
+  c.width = 1024; c.height = 128;
+  const g = c.getContext("2d");
+  g.fillStyle = "#0d1c20";
+  g.fillRect(0, 0, 1024, 128);
+  for (let i = 0; i < 4; i++) {
+    const grad = g.createLinearGradient(i * 256, 0, i * 256 + 256, 128);
+    grad.addColorStop(0, i % 2 ? "#f28b3c" : "#4fb3ad");
+    grad.addColorStop(1, i % 2 ? "#7d3f1a" : "#14474a");
+    g.fillStyle = grad;
+    g.fillRect(i * 256 + 10, 26, 236, 76);
+  }
+  g.fillStyle = "#f3e8d9";
+  for (let i = 0; i < 32; i++) {
+    g.fillRect(i * 32 + 8, 7, 16, 11);
+    g.fillRect(i * 32 + 8, 110, 16, 11);
+  }
+  return c;
+}
+
+function start3D() {
+  const stage = document.getElementById("stage");
+  const canvas = document.getElementById("scene");
+  const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(32, 1, .1, 60);
+  camera.position.z = 13;
+  scene.add(new THREE.AmbientLight(0xffffff, .3));
+  const key = new THREE.DirectionalLight(0xffe2c4, .62);
+  key.position.set(4, 5, 8);
+  scene.add(key);
+  const rim = new THREE.PointLight(0x4fb3ad, .7, 30);
+  rim.position.set(-5, -2, 4);
+  scene.add(rim);
+
+  const root = new THREE.Group();
+  scene.add(root);
+  const reel = new THREE.Group();
+  root.add(reel);
+
+  const disk = new THREE.Shape();
+  disk.absarc(0, 0, 2.4, 0, Math.PI * 2, false);
+  for (let i = 0; i < 5; i++) {
+    const a = i / 5 * Math.PI * 2 + Math.PI / 2;
+    const hole = new THREE.Path();
+    hole.absarc(Math.cos(a) * 1.36, Math.sin(a) * 1.36, .56, 0, Math.PI * 2, true);
+    disk.holes.push(hole);
+  }
+  const center = new THREE.Path();
+  center.absarc(0, 0, .2, 0, Math.PI * 2, true);
+  disk.holes.push(center);
+  const diskGeo = new THREE.ExtrudeGeometry(disk, { depth: .08, bevelEnabled: true, bevelThickness: .03, bevelSize: .03, bevelSegments: 3, curveSegments: 48 });
+  const diskMat = new THREE.MeshStandardMaterial({ color: 0xf28b3c, metalness: 0, roughness: .95 });
+  const front = new THREE.Mesh(diskGeo, diskMat);
+  front.position.z = .3;
+  reel.add(front);
+  const back = new THREE.Mesh(diskGeo, diskMat);
+  back.position.z = -.42;
+  reel.add(back);
+
+  const coil = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.95, 1.95, .6, 64),
+    new THREE.MeshStandardMaterial({ color: 0x173238, metalness: .1, roughness: .65 })
+  );
+  coil.rotation.x = Math.PI / 2;
+  reel.add(coil);
+  const hub = new THREE.Mesh(
+    new THREE.CylinderGeometry(.5, .5, .9, 32),
+    new THREE.MeshStandardMaterial({ color: 0xf3e8d9, metalness: .2, roughness: .4 })
+  );
+  hub.rotation.x = Math.PI / 2;
+  reel.add(hub);
+
+  /* The film leaves the reel as a ribbon and its frames scroll along it */
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(1.75, -.9, 0),
+    new THREE.Vector3(2.55, -1.75, .2),
+    new THREE.Vector3(1.6, -2.75, .55),
+    new THREE.Vector3(-.5, -2.75, .75),
+    new THREE.Vector3(-2.6, -2.5, .35),
+    new THREE.Vector3(-3.5, -1.2, -.2),
+    new THREE.Vector3(-3.3, .6, -.7)
+  ]);
+  const SEGMENTS = 140, HALF = .3;
+  const positions = [], uvs = [], index = [];
+  const side = new THREE.Vector3(), axis = new THREE.Vector3(0, 0, 1);
+  for (let i = 0; i <= SEGMENTS; i++) {
+    const t = i / SEGMENTS;
+    const p = curve.getPointAt(t);
+    side.crossVectors(axis, curve.getTangentAt(t)).normalize().multiplyScalar(HALF);
+    positions.push(p.x + side.x, p.y + side.y, p.z + side.z, p.x - side.x, p.y - side.y, p.z - side.z);
+    uvs.push(t * 4, 1, t * 4, 0);
+    if (i < SEGMENTS) {
+      const a = i * 2;
+      index.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+    }
+  }
+  const ribbonGeo = new THREE.BufferGeometry();
+  ribbonGeo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  ribbonGeo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  ribbonGeo.setIndex(index);
+  ribbonGeo.computeVertexNormals();
+  const film = new THREE.CanvasTexture(filmTexture());
+  film.wrapS = THREE.RepeatWrapping;
+  film.encoding = THREE.sRGBEncoding;
+  film.anisotropy = 4;
+  root.add(new THREE.Mesh(ribbonGeo, new THREE.MeshStandardMaterial({ map: film, side: THREE.DoubleSide, roughness: .55, emissive: 0x222222, emissiveMap: film })));
+
+  /* Timeline clips float behind the reel */
+  const clipsGroup = new THREE.Group();
+  root.add(clipsGroup);
+  const floats = [
+    [2.9, 2.2, -1.2, 1.3, 0xf28b3c], [3.3, 1.2, -.8, .9, 0x4fb3ad], [2.7, .25, -1.4, 1.1, 0xf3e8d9],
+    [-2.4, 2.75, -1.1, 1.5, 0x4fb3ad], [-3.1, 1.9, -1.5, .8, 0xf28b3c]
+  ].map(function (d, i) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(d[3], .26, .16), new THREE.MeshStandardMaterial({ color: d[4], roughness: .45 }));
+    m.position.set(d[0], d[1], d[2]);
+    m.userData = { y: d[1], phase: i * 1.3 };
+    clipsGroup.add(m);
+    return m;
+  });
+
+  function resize() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    /* Keep the whole object inside the stage at any shape */
+    const visibleW = 2 * camera.position.z * Math.tan(THREE.MathUtils.degToRad(16)) * camera.aspect;
+    const visibleH = visibleW / camera.aspect;
+    root.scale.setScalar(Math.min(visibleW / 8.2, visibleH / 7.2));
+    root.position.y = .25 * root.scale.y;
+  }
+  new ResizeObserver(resize).observe(stage);
+  resize();
+
+  let mx = 0, my = 0, onScreen = true;
+  window.addEventListener("pointermove", function (e) {
+    mx = e.clientX / window.innerWidth - .5;
+    my = e.clientY / window.innerHeight - .5;
+  }, { passive: true });
+  new IntersectionObserver(function (entries) { onScreen = entries[0].isIntersecting; }).observe(stage);
+
+  const start = performance.now();
+  let first = true;
+  function frame(now) {
+    requestAnimationFrame(frame);
+    if (!onScreen || document.hidden) return;
+    const t = (now - start) / 1000;
+    const scroll = window.scrollY;
+    reel.rotation.z = -t * .3 - scroll * .004;
+    film.offset.x = -t * .12 - scroll * .0008;
+    root.rotation.y += ((-.32 + mx * .5) - root.rotation.y) * .06;
+    root.rotation.x += ((.1 + my * .3) - root.rotation.x) * .06;
+    floats.forEach(function (m) {
+      m.position.y = m.userData.y + Math.sin(t * .8 + m.userData.phase) * .12;
+    });
+    renderer.render(scene, camera);
+    if (first) { first = false; stage.classList.add("live"); }
+  }
+  requestAnimationFrame(frame);
+}
+
+function load3D() {
+  if (!canRun3D()) return;
+  const script = document.createElement("script");
+  script.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
+  script.onload = function () {
+    try { start3D(); } catch (e) { console.warn("3D scene skipped:", e); }
+  };
+  document.head.appendChild(script);
+}
+
+window.addEventListener("load", function () {
+  if (window.requestIdleCallback) requestIdleCallback(load3D, { timeout: 1500 });
+  else setTimeout(load3D, 300);
+});
+</script>
+</body>
+</html>
